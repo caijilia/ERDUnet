@@ -1,2 +1,2 @@
 # ERDUnet
-# THE CODE WILL BE UPLOAD!
+# Our code will be uploaded after it has been organized and normalized.
