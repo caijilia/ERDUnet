@@ -58,7 +58,7 @@ class DRA(nn.Module): # Differential Regional Attention
 
 class IRE(nn.Module):
     def __init__(self, in_ch, rate, only_ch=0, only_sp=0):
-        super(IRA, self).__init__()
+        super(IRE, self).__init__()
         self.fc1        = nn.Conv2d(in_channels=in_ch, out_channels=int(in_ch/rate), kernel_size=1)
         self.relu       = nn.ReLU(inplace=True)
         self.fc2        = nn.Conv2d(in_channels=int(in_ch/rate), out_channels=in_ch, kernel_size=1)
@@ -165,7 +165,7 @@ class CEE(nn.Module): # Context Enhanced Encoder
     def __init__(self, patch_size=3, stride=2, in_chans=64, embed_dim=64, smaller=0, use_att=0):
         super().__init__()
         self.att_use = use_att
-        self.att = IRA(in_ch=embed_dim, rate=4, only_ch=0, only_sp=0)
+        self.att = IRE(in_ch=embed_dim, rate=4, only_ch=0, only_sp=0)
         patch_size = to_2tuple(patch_size)
         self.proj = nn.Sequential(
             nn.Conv2d(in_chans, embed_dim, kernel_size=patch_size, stride=stride, padding=(patch_size[0] // 2)),
@@ -274,8 +274,8 @@ class ERDUnet(nn.Module):
         self.dropout = nn.Dropout(drop_rate)
         #---------------------------------------------------------------------------
         self.head = MRA(c1_in_channels=64, c2_in_channels=128, c3_in_channels=256, embedding_dim=256, classes=num_classes)
-        self.att_0 = IRA(in_ch=256, rate=4, only_ch=0, only_sp=0)
-        self.att_1 = IRA(in_ch=256, rate=4, only_ch=0, only_sp=0)
+        self.att_0 = IRE(in_ch=256, rate=4, only_ch=0, only_sp=0)
+        self.att_1 = IRE(in_ch=256, rate=4, only_ch=0, only_sp=0)
         
         self.toshow_p0  = nn.Sequential(nn.Identity()) # 32
         self.toshow_p1  = nn.Sequential(nn.Identity()) # 64
@@ -306,11 +306,11 @@ class ERDUnet(nn.Module):
         )
 
         self.out_1_skip = nn.Sequential(
-            IRA(in_ch=128, rate=4, only_ch=0, only_sp=0),
+            IRE(in_ch=128, rate=4, only_ch=0, only_sp=0),
             nn.BatchNorm2d(128)
         )
         self.out_2_skip = nn.Sequential(
-            IRA(in_ch=64, rate=4, only_ch=0, only_sp=0),
+            IRE(in_ch=64, rate=4, only_ch=0, only_sp=0),
             nn.BatchNorm2d(64)
         )
         self.out_3_skip = nn.Sequential(
@@ -340,14 +340,14 @@ class ERDUnet(nn.Module):
         )
 
         # double net
-        self.split_att = IRA(16, 4, 0, 1) # split_attention(in_channels=32, channels=16, groups=1, radix=2, reduction_factor=2)
+        self.split_att = IRE(16, 4, 0, 1) # split_attention(in_channels=32, channels=16, groups=1, radix=2, reduction_factor=2)
         self.down_path_0 = CEE(patch_size=3, stride=2, in_chans=16, embed_dim=32, smaller=1) # 16 16 192 256 -> 16 96*128 32
         self.down_path_1 = CEE(patch_size=3, stride=2, in_chans=32, embed_dim=64, smaller=1) # 16 32 96 128 -> 16 48*64 64
         self.down_path_2 = CEE(patch_size=3, stride=2, in_chans=64, embed_dim=128, smaller=1) # 16 64 48 64 -> 16 24*32 128
 
         self.head_2 = MRA(c1_in_channels=32, c2_in_channels=64, c3_in_channels=128, embedding_dim=128, classes=num_classes)
-        self.att_0_2 = IRA(in_ch=128, rate=4, only_ch=0, only_sp=0)
-        self.att_1_2 = IRA(in_ch=128, rate=4, only_ch=0, only_sp=0)
+        self.att_0_2 = IRE(in_ch=128, rate=4, only_ch=0, only_sp=0)
+        self.att_1_2 = IRE(in_ch=128, rate=4, only_ch=0, only_sp=0)
         self.out_norm_0_2 = nn.BatchNorm2d(128)
         self.out_norm_1_2 = nn.BatchNorm2d(128)
 
@@ -355,11 +355,11 @@ class ERDUnet(nn.Module):
         self.out_3_2 = nn.Sequential(Conv(64, 32, 1, 1, bn=True, relu=True))
 
         self.out_2_2_skip = nn.Sequential(
-            IRA(in_ch=64*2, rate=8, only_ch=1, only_sp=0),
+            IRE(in_ch=64*2, rate=8, only_ch=1, only_sp=0),
             Conv(64*2, 64, 1, 1, True, True)
         )
         self.out_3_2_skip = nn.Sequential(
-            IRA(in_ch=32*2, rate=8, only_ch=1, only_sp=0),
+            IRE(in_ch=32*2, rate=8, only_ch=1, only_sp=0),
             Conv(32*2, 32, 1, 1, True, True)
             # nn.GELU()
         )
@@ -367,11 +367,11 @@ class ERDUnet(nn.Module):
         self.skip_0_1_2 = DRA(in_ch=128, class_num=num_classes, value=0.5, simple=1, large=1) # 虽然这里是失误 写成了 1 1 但是实际的特征流动是large mode
 
         self.skip_2_1_2 = nn.Sequential(
-            IRA(in_ch=64*2, rate=8, only_ch=1, only_sp=0),
+            IRE(in_ch=64*2, rate=8, only_ch=1, only_sp=0),
             Conv(64*2, 64, 1, 1, True, True)
         )
         self.skip_3_1_2   = nn.Sequential(
-            IRA(in_ch=32*2, rate=8, only_ch=1, only_sp=0),
+            IRE(in_ch=32*2, rate=8, only_ch=1, only_sp=0),
             Conv(32*2, 32, 1, 1, True, True)
         )
         #---------------------------------------------------------------------------
