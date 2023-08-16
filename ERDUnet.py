@@ -139,8 +139,6 @@ class MRA(nn.Module): # Multiple Receptive-field Aggregation
         return x
 
 class PFC(nn.Module):
-    # 可以用在整体网络的  第一层  对第一层的输入信息进行充分的信息提取
-    # 虽然说  在pe中加入pfc效果确实不好  但是参数量倒是确实不高
     def __init__(self, in_ch, channels, kernel_size=7):
         super(PFC, self).__init__()
         self.input_layer = nn.Sequential(
@@ -211,7 +209,7 @@ class CEE(nn.Module): # Context Enhanced Encoder
     def forward(self, x):
         b, c, h, w = x.shape
         # overlap 编码
-        x_pe = self.proj(x) # 16 64 48 64 -> 16 64 24 32 # 重叠式编码
+        x_pe = self.proj(x) # 16 64 48 64 -> 16 64 24 32 
         if self.att_use == 1:
             x_pe = self.att(x_pe)
         # conv 编码
@@ -219,7 +217,7 @@ class CEE(nn.Module): # Context Enhanced Encoder
         # fc_0
         x_PE = x_pe.flatten(2).transpose(1, 2) # 16 64 24 32 ->16 64 24*32 -> 16 24*32 64
         x_PE = self.norm(x_PE)
-        x_po = self.dwconv(x_pe).flatten(2).transpose(1, 2) # 按照 unext 这里是加入位置编码
+        x_po = self.dwconv(x_pe).flatten(2).transpose(1, 2)
         x_0  = torch.transpose((x_PE + x_po), 1, 2).view(b, x_pe.shape[1], int(h/2), int(w/2))
         x_0  = self.fc0(x_0) # 16 24*32 64
         # fc_1
@@ -230,7 +228,7 @@ class CEE(nn.Module): # Context Enhanced Encoder
             x_out  = x_1_ + x_PE
             return x_out
         else:
-            x_1_ = self.dwconv_1(x_1) # .flatten(2).transpose(1, 2) # 这里应该重新初始化一个dwconv吗
+            x_1_ = self.dwconv_1(x_1) # .flatten(2).transpose(1, 2) 
             x_1_ = self.turn_channel(torch.cat([x_1, x_pe], dim=1)).flatten(2).transpose(1, 2)
             x_out  = self.fc1(x_1_) + x_PE
             return x_out
