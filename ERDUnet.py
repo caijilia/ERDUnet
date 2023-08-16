@@ -56,7 +56,7 @@ class DRA(nn.Module): # Differential Regional Attention
             x           = self.add_learn(x) 
         return x
 
-class IRA(nn.Module):
+class IRE(nn.Module):
     def __init__(self, in_ch, rate, only_ch=0, only_sp=0):
         super(IRA, self).__init__()
         self.fc1        = nn.Conv2d(in_channels=in_ch, out_channels=int(in_ch/rate), kernel_size=1)
